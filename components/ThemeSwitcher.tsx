@@ -6,14 +6,13 @@ type ThemeMode = "auto" | "light" | "dark";
 const STORAGE_KEY = "did-you-know-theme";
 
 export default function ThemeSwitcher() {
-  const [theme, setTheme] = useState<ThemeMode>("auto");
-
-  useEffect(() => {
+  const getInitialTheme = (): ThemeMode => {
+    if (typeof window === "undefined") return "auto";
     const storedTheme = window.localStorage.getItem(STORAGE_KEY) as ThemeMode | null;
-    if (storedTheme === "light" || storedTheme === "dark" || storedTheme === "auto") {
-      setTheme(storedTheme);
-    }
-  }, []);
+    return (storedTheme === "light" || storedTheme === "dark" || storedTheme === "auto") ? storedTheme : "auto";
+  };
+
+  const [theme, setTheme] = useState<ThemeMode>(getInitialTheme);
 
   useEffect(() => {
     const root = document.documentElement;
