@@ -19,7 +19,7 @@ export default function Home() {
       </main>
 
       <footer>
-        <p>&copy; 2025 - <span id="current-year">{new Date().getFullYear()}</span> Did You Know?</p>
+        <p>&copy; <span id="current-year">{new Date().getFullYear()}</span> - Did You Know?</p>
       </footer>
     </div>
   );
