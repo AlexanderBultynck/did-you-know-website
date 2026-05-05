@@ -1,4 +1,5 @@
 import FactWidget from "../components/FactWidget";
+import ThemeSwitcher from "../components/ThemeSwitcher";
 
 export default function Home() {
   return (
@@ -10,6 +11,7 @@ export default function Home() {
           <p className="tagline">Short, surprising facts.</p>
         </div>
         <p className="kbd-hint">Keyboard: <kbd>Space</kbd> for new fact • <kbd>C</kbd> copy • <kbd>S</kbd> share</p>
+        <ThemeSwitcher />
       </header>
 
       <main>
@@ -17,7 +19,7 @@ export default function Home() {
       </main>
 
       <footer>
-        <p>&copy; 2025 - <span id="current-year">{new Date().getFullYear()}</span> Did You Know?</p>
+        <p>&copy; <span id="current-year">{new Date().getFullYear()}</span> - Did You Know?</p>
       </footer>
     </div>
   );

@@ -14,8 +14,8 @@
 
 @media (prefers-color-scheme: dark) {
   :root {
-  --background: #0a0a0a;
-  --foreground: #ededed;
+    --background: #0a0a0a;
+    --foreground: #ededed;
   }
 }
 
@@ -28,6 +28,49 @@ body {
 /* --- Migrated site styles (from styles.css) --- */
 
 :root {
+  --bg: #f8fafc;
+  --bg-accent: #ffffff;
+  --text: #0f172a;
+  --muted: #475569;
+  --primary: #2563eb;
+  --primary-strong: #1d4ed8;
+  --card: #ffffff;
+  --shadow: 0 10px 24px rgba(2, 6, 23, 0.08);
+  --radius: 14px;
+  --max-width: 980px;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0f172a;
+    --bg-accent: #0b1220;
+    --text: #e5e7eb;
+    --muted: #94a3b8;
+    --primary: #60a5fa;
+    --primary-strong: #3b82f6;
+    --card: #071028;
+    --shadow: 0 10px 30px rgba(2, 6, 23, 0.6);
+  }
+}
+
+html.theme-light {
+  color-scheme: light;
+  --background: #ffffff;
+  --foreground: #171717;
+  --bg: #f8fafc;
+  --bg-accent: #ffffff;
+  --text: #0f172a;
+  --muted: #475569;
+  --primary: #2563eb;
+  --primary-strong: #1d4ed8;
+  --card: #ffffff;
+  --shadow: 0 10px 24px rgba(2, 6, 23, 0.08);
+}
+
+html.theme-dark {
+  color-scheme: dark;
+  --background: #0a0a0a;
+  --foreground: #ededed;
   --bg: #0f172a;
   --bg-accent: #0b1220;
   --text: #e5e7eb;
@@ -36,21 +79,37 @@ body {
   --primary-strong: #3b82f6;
   --card: #071028;
   --shadow: 0 10px 30px rgba(2, 6, 23, 0.6);
-  --radius: 14px;
-  --max-width: 980px;
 }
 
-@media (prefers-color-scheme: light) {
-  :root {
-    --bg: #f8fafc;
-    --bg-accent: #ffffff;
-    --text: #0f172a;
-    --muted: #475569;
-    --primary: #2563eb;
-    --primary-strong: #1d4ed8;
-    --card: #ffffff;
-    --shadow: 0 10px 24px rgba(2, 6, 23, 0.08);
-  }
+.theme-switcher {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+  justify-content: flex-start;
+  margin-top: 14px;
+}
+
+.theme-switcher label {
+  font-size: 13px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.theme-switcher select {
+  min-width: 140px;
+  padding: 10px 12px;
+  border-radius: 999px;
+  border: 1px solid rgba(100, 116, 139, 0.24);
+  background: var(--bg-accent);
+  color: var(--text);
+  font-size: 14px;
+  outline: none;
+}
+
+.theme-switcher select:focus {
+  box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.14);
 }
 
 * {
