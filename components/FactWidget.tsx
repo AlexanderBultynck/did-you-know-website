@@ -40,10 +40,13 @@ export default function FactWidget(): React.ReactElement {
       setFact(data.text || "No fact received.");
       // small reveal: handled via CSS class
       setStatusMessage("");
-    } catch (err) {
-      console.error("Error fetching fact:", err);
-      setFact("Oops! Something went wrong. Try again.");
-      setStatusMessage("Failed to load a fact. Check your connection.");
+    } catch (err: unknown) {
+      const isAbort = err instanceof DOMException && err.name === "AbortError";
+      if (!isAbort) {
+        console.error("Error fetching fact:", err);
+        setFact("Oops! Something went wrong. Try again.");
+        setStatusMessage("Failed to load a fact. Check your connection.");
+      }
     } finally {
       setIsLoading(false);
     }
