@@ -4,17 +4,19 @@ import React, { useEffect, useRef, useState } from "react";
 
 const FACT_URL = "https://uselessfacts.jsph.pl/random.json?language=en";
 
+type FactData = { text?: string } & Record<string, unknown>;
+
 export default function FactWidget(): React.ReactElement {
   const [fact, setFact] = useState<string>("");
   const [isLoading, setIsLoading] = useState(false);
   const [statusMessage, setStatusMessage] = useState("");
-  const [prefetched, setPrefetched] = useState<any>(null);
+  const [prefetched, setPrefetched] = useState<FactData | null>(null);
   const currentController = useRef<AbortController | null>(null);
 
-  async function getFactFromApi(signal?: AbortSignal) {
+  async function getFactFromApi(signal?: AbortSignal): Promise<FactData> {
     const res = await fetch(FACT_URL, { cache: "no-store", signal });
     if (!res.ok) throw new Error("Network response was not ok");
-    return res.json();
+    return (await res.json()) as FactData;
   }
 
   async function fetchFact(usePrefetch = true) {
@@ -22,12 +24,12 @@ export default function FactWidget(): React.ReactElement {
     setIsLoading(true);
     setStatusMessage("");
     if (currentController.current) {
-      try { currentController.current.abort(); } catch (e) {}
+      try { currentController.current.abort(); } catch { }
     }
     currentController.current = new AbortController();
     const { signal } = currentController.current;
     try {
-      let data: any;
+      let data: FactData | null = null;
       if (usePrefetch && prefetched) {
         data = prefetched;
         setPrefetched(null);
@@ -52,7 +54,7 @@ export default function FactWidget(): React.ReactElement {
       const controller = new AbortController();
       const data = await getFactFromApi(controller.signal);
       setPrefetched(data);
-    } catch (e: any) {
+    } catch {
       setPrefetched(null);
     }
   }
@@ -81,8 +83,9 @@ export default function FactWidget(): React.ReactElement {
       setStatusMessage("Copied to clipboard!");
       setTimeout(() => { if (statusMessage === "Copied to clipboard!") setStatusMessage(""); }, 2000);
       return true;
-    } catch (e: any) {
-      console.error("Copy failed:", e);
+    } catch (err: unknown) {
+      console.error("Copy failed:", err);
+      const e = err as { name?: string; message?: string } | undefined;
       const msg = (e && (e.name === 'NotAllowedError' || (e.message && e.message.toLowerCase().includes('permission')))) ?
         'Copy failed (permission denied). Use manual copy.' :
         'Copy failed. Try selecting the text.';
@@ -94,27 +97,29 @@ export default function FactWidget(): React.ReactElement {
   async function shareFact() {
     const text = fact.trim();
     if (!text) return;
-    if ((navigator as any).share) {
+    const nav = navigator as Navigator & { share?: (data: { title?: string; text?: string }) => Promise<void> };
+    if (nav.share) {
       try {
-        await (navigator as any).share({ title: 'Did You Know?', text });
-      } catch (e) {
+        await nav.share({ title: 'Did You Know?', text });
+      } catch {
         // user cancelled
       }
     } else {
       const copied = await copyFact();
       if (!copied) {
-        try { window.prompt('Copy the fact below (Ctrl+C/Cmd+C):', text); } catch (e) { setStatusMessage('Unable to share. Please copy the text manually.'); }
+        try { window.prompt('Copy the fact below (Ctrl+C/Cmd+C):', text); } catch { setStatusMessage('Unable to share. Please copy the text manually.'); }
       } else {
-        setStatusMessage('Fact copied — paste it to share!');
-        setTimeout(() => { if (statusMessage.startsWith('Fact copied')) setStatusMessage(''); }, 2000);
+        const shareMsg = 'Fact copied — paste it to share!';
+        setStatusMessage(shareMsg);
+        setTimeout(() => { setStatusMessage((cur) => cur && cur === shareMsg ? '' : cur); }, 2000);
       }
     }
   }
 
   useEffect(() => {
-    fetchFact(false).then(() => prefetchFact());
+    const t = setTimeout(() => { void fetchFact(false).then(() => prefetchFact()).catch(() => {}); }, 0);
     const iv = setInterval(() => { if (!prefetched) prefetchFact(); }, 30000);
-    return () => { clearInterval(iv); if (currentController.current) currentController.current.abort(); };
+    return () => { clearTimeout(t); clearInterval(iv); if (currentController.current) currentController.current.abort(); };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
