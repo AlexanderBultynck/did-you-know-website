@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useCallback, useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 
 const FACT_URL = "https://uselessfacts.jsph.pl/random.json?language=en";
 
@@ -19,17 +19,7 @@ export default function FactWidget(): React.ReactElement {
     return (await res.json()) as FactData;
   }
 
-  const prefetchFact = useCallback(async () => {
-    try {
-      const controller = new AbortController();
-      const data = await getFactFromApi(controller.signal);
-      setPrefetched(data);
-    } catch {
-      setPrefetched(null);
-    }
-  }, []);
-
-  const fetchFact = useCallback(async (usePrefetch = true) => {
+  async function fetchFact(usePrefetch = true) {
     if (isLoading) return;
     setIsLoading(true);
     setStatusMessage("");
@@ -60,7 +50,17 @@ export default function FactWidget(): React.ReactElement {
     } finally {
       setIsLoading(false);
     }
-  }, [isLoading, prefetched, prefetchFact]);
+  }
+
+  async function prefetchFact() {
+    try {
+      const controller = new AbortController();
+      const data = await getFactFromApi(controller.signal);
+      setPrefetched(data);
+    } catch {
+      setPrefetched(null);
+    }
+  }
 
   async function copyFact() {
     const text = fact.trim();
@@ -123,7 +123,8 @@ export default function FactWidget(): React.ReactElement {
     const t = setTimeout(() => { void fetchFact(false).then(() => prefetchFact()).catch(() => {}); }, 0);
     const iv = setInterval(() => { if (!prefetched) prefetchFact(); }, 30000);
     return () => { clearTimeout(t); clearInterval(iv); if (currentController.current) currentController.current.abort(); };
-  }, [fetchFact, prefetchFact, prefetched]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
