@@ -12,7 +12,7 @@ Dit project is een hobby- of demonstratiewebsite gebouwd met Next.js en React. D
 1. Repo klonen:
 
 ```
-git clone <repository-url>
+git clone https://github.com/AlexanderBultynck/did-you-know-website.git
 cd did-you-know-website
 ```
 
