@@ -66,23 +66,7 @@ export default function FactWidget(): React.ReactElement {
     const text = fact.trim();
     if (!text) return;
     try {
-      if (navigator.clipboard && navigator.clipboard.writeText) {
-        await navigator.clipboard.writeText(text);
-      } else {
-        const textarea = document.createElement("textarea");
-        textarea.value = text;
-        textarea.setAttribute("aria-hidden", "true");
-        textarea.style.position = "fixed";
-        textarea.style.left = "-9999px";
-        textarea.style.top = (window.scrollY || 0) + "px";
-        textarea.readOnly = true;
-        document.body.appendChild(textarea);
-        textarea.focus();
-        textarea.select();
-        textarea.setSelectionRange(0, textarea.value.length);
-        document.execCommand("copy");
-        document.body.removeChild(textarea);
-      }
+      await navigator.clipboard.writeText(text);
       setStatusMessage("Copied to clipboard!");
       setTimeout(() => { if (statusMessage === "Copied to clipboard!") setStatusMessage(""); }, 2000);
       return true;
