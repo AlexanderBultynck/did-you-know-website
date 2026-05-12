@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 
 const FACT_URL = "https://uselessfacts.jsph.pl/random.json?language=en";
 
@@ -12,16 +12,44 @@ export default function FactWidget(): React.ReactElement {
   const [statusMessage, setStatusMessage] = useState("");
   const [prefetched, setPrefetched] = useState<FactData | null>(null);
   const currentController = useRef<AbortController | null>(null);
+  const prefetchedRef = useRef<FactData | null>(null);
+  const isLoadingRef = useRef(false);
+  const factRef = useRef<string>(fact);
 
-  async function getFactFromApi(signal?: AbortSignal): Promise<FactData> {
+  useEffect(() => {
+    prefetchedRef.current = prefetched;
+  }, [prefetched]);
+
+  useEffect(() => {
+    isLoadingRef.current = isLoading;
+  }, [isLoading]);
+
+  useEffect(() => {
+    factRef.current = fact;
+  }, [fact]);
+
+  const getFactFromApi = useCallback(async (signal?: AbortSignal): Promise<FactData> => {
     const res = await fetch(FACT_URL, { cache: "no-store", signal });
     if (!res.ok) throw new Error("Network response was not ok");
     return (await res.json()) as FactData;
-  }
+  }, []);
 
-  async function fetchFact(usePrefetch = true) {
-    if (isLoading) return;
+  const prefetchFact = useCallback(async () => {
+    try {
+      const controller = new AbortController();
+      const data = await getFactFromApi(controller.signal);
+      prefetchedRef.current = data;
+      setPrefetched(data);
+    } catch {
+      prefetchedRef.current = null;
+      setPrefetched(null);
+    }
+  }, [getFactFromApi]);
+
+  const fetchFact = useCallback(async (usePrefetch = true) => {
+    if (isLoadingRef.current) return;
     setIsLoading(true);
+    isLoadingRef.current = true;
     setStatusMessage("");
     if (currentController.current) {
       try { currentController.current.abort(); } catch { }
@@ -30,15 +58,15 @@ export default function FactWidget(): React.ReactElement {
     const { signal } = currentController.current;
     try {
       let data: FactData | null = null;
-      if (usePrefetch && prefetched) {
-        data = prefetched;
+      if (usePrefetch && prefetchedRef.current) {
+        data = prefetchedRef.current;
+        prefetchedRef.current = null;
         setPrefetched(null);
         prefetchFact().catch(() => {});
       } else {
         data = await getFactFromApi(signal);
       }
       setFact(data.text || "No fact received.");
-      // small reveal: handled via CSS class
       setStatusMessage("");
     } catch (err: unknown) {
       const isAbort = err instanceof DOMException && err.name === "AbortError";
@@ -49,26 +77,19 @@ export default function FactWidget(): React.ReactElement {
       }
     } finally {
       setIsLoading(false);
+      isLoadingRef.current = false;
     }
-  }
+  }, [getFactFromApi, prefetchFact]);
 
-  async function prefetchFact() {
-    try {
-      const controller = new AbortController();
-      const data = await getFactFromApi(controller.signal);
-      setPrefetched(data);
-    } catch {
-      setPrefetched(null);
-    }
-  }
-
-  async function copyFact() {
-    const text = fact.trim();
-    if (!text) return;
+  const copyFact = useCallback(async () => {
+    const text = factRef.current.trim();
+    if (!text) return false;
     try {
       await navigator.clipboard.writeText(text);
       setStatusMessage("Copied to clipboard!");
-      setTimeout(() => { if (statusMessage === "Copied to clipboard!") setStatusMessage(""); }, 2000);
+      setTimeout(() => {
+        setStatusMessage((current) => current === "Copied to clipboard!" ? "" : current);
+      }, 2000);
       return true;
     } catch (err: unknown) {
       console.error("Copy failed:", err);
@@ -79,10 +100,10 @@ export default function FactWidget(): React.ReactElement {
       setStatusMessage(msg);
       return false;
     }
-  }
+  }, []);
 
-  async function shareFact() {
-    const text = fact.trim();
+  const shareFact = useCallback(async () => {
+    const text = factRef.current.trim();
     if (!text) return;
     const nav = navigator as Navigator & { share?: (data: { title?: string; text?: string }) => Promise<void> };
     if (nav.share) {
@@ -94,21 +115,24 @@ export default function FactWidget(): React.ReactElement {
     } else {
       const copied = await copyFact();
       if (!copied) {
-        try { window.prompt('Copy the fact below (Ctrl+C/Cmd+C):', text); } catch { setStatusMessage('Unable to share. Please copy the text manually.'); }
+        try {
+          window.prompt('Copy the fact below (Ctrl+C/Cmd+C):', text);
+        } catch {
+          setStatusMessage('Unable to share. Please copy the text manually.');
+        }
       } else {
         const shareMsg = 'Fact copied — paste it to share!';
         setStatusMessage(shareMsg);
         setTimeout(() => { setStatusMessage((cur) => cur && cur === shareMsg ? '' : cur); }, 2000);
       }
     }
-  }
+  }, [copyFact]);
 
   useEffect(() => {
     const t = setTimeout(() => { void fetchFact(false).then(() => prefetchFact()).catch(() => {}); }, 0);
-    const iv = setInterval(() => { if (!prefetched) prefetchFact(); }, 30000);
+    const iv = setInterval(() => { if (!prefetchedRef.current) prefetchFact(); }, 30000);
     return () => { clearTimeout(t); clearInterval(iv); if (currentController.current) currentController.current.abort(); };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [fetchFact, prefetchFact]);
 
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
@@ -132,8 +156,7 @@ export default function FactWidget(): React.ReactElement {
     }
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [fact, prefetched]);
+  }, [copyFact, fetchFact, shareFact]);
 
   return (
     <section id="fact-container" aria-labelledby="fact-heading">
